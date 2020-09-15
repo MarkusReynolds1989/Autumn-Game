@@ -127,6 +127,10 @@ const game = () => {
 		tree1 = new Image(),
 		stone1 = new Image(),
 		well = new Image(),
+		waterDropSound = new Audio(),
+		waterFillSound = new Audio(),
+		song = new Audio(),
+		ghostSound = new Audio("Assets/spooky.wav"),
 		tileState = {
 			empty: "empty",
 			hasSeed: "hasSeed",
@@ -181,6 +185,7 @@ const game = () => {
 		search() {
 			let currentTile = tiles.find((x) => x.state == tileState.hasPumpkin);
 			if (currentTile != undefined) {
+				ghostSound.play();
 				if (this.x < currentTile.x) {
 					this.x += 2;
 				}
@@ -197,6 +202,8 @@ const game = () => {
 					currentTile.harvest();
 				}
 			} else {
+				ghostSound.pause();
+				ghostSound.currentTime = 0;
 				if (this.originX > 0 && this.originY > 0) {
 					if (this.x < this.originX) {
 						this.x += 1;
@@ -327,6 +334,9 @@ const game = () => {
 		tree1.src = "Assets/Tree1.png";
 		stone1.src = "Assets/Stone1.png";
 		well.src = "Assets/Well.png";
+		waterFillSound.src = "Assets/waterFillSound.wav";
+		waterDropSound.src = "Assets/waterDropSound.wav";
+		song.src = "Assets/Fall.m4a";
 		for (let x = 50; x < 750; x += 50) {
 			for (let y = 50; y < 750; y += 50) {
 				tiles.push(new Tile(x, y, tileState.empty));
@@ -368,6 +378,7 @@ const game = () => {
 	const updateScene = () => {
 		if(restartPressed) {
 			clearInterval(process);
+			song.load();
 			game();	
 		}
 		incTime();
@@ -394,11 +405,13 @@ const game = () => {
 				}
 				if (currentTile.state == tileState.isWell) {
 					meter.fill();
+					waterFillSound.play();
 					mouseReleased = false;
 
 				} else if (currentTile.state != tileState.hasTree && currentTile.state != tileState.hasStone) {
 					if (meter.fillLevel < 0 && currentTile.isWatered == false) {
 						currentTile.water();
+						waterDropSound.play();
 						meter.drain();
 					}
 					mouseReleased = false;
@@ -429,6 +442,7 @@ const game = () => {
 	};
 
 	init();
+	song.play();
 	process = setInterval(updateScene, 10);
 };
 // init ; update -> draw
