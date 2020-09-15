@@ -10,6 +10,7 @@ let rightPressed = false,
 	upPressed = false,
 	downPressed = false,
 	mouseReleased = false,
+	restartPressed = false,
 	mouseX,
 	mouseY;
 
@@ -59,6 +60,9 @@ const keyDownHandler = (event) => {
 	} else if (event.key == "Down" || event.key == "ArrowDown") {
 		downPressed = true;
 		event.preventDefault();
+	} else if (event.key == "R" || event.key == "r") {
+		restartPressed = true;
+		event.preventDefault();
 	}
 };
 
@@ -71,6 +75,8 @@ const keyUpHandler = (event) => {
 		upPressed = false;
 	} else if (event.key == "Down" || event.key == "ArrowDown") {
 		downPressed = false;
+	} else if (event.key == "R" || event.key == "r") {
+		restartPressed = false;
 	}
 };
 
@@ -118,6 +124,9 @@ const game = () => {
 		dryDirt1 = new Image(),
 		wetDirt1 = new Image(),
 		seed = new Image(),
+		tree1 = new Image(),
+		stone1 = new Image(),
+		well = new Image(),
 		tileState = {
 			empty: "empty",
 			hasSeed: "hasSeed",
@@ -129,13 +138,13 @@ const game = () => {
 
 	let tiles = [],
 		ghosts = [],
+		process,
 		pumpkins = 0,
 		meter,
 		seeds = 1,
 		tick = 0,
 		seconds = 300,
-		score = 0,
-		gameOver;
+		score = 0;
 
 	class WaterMeter {
 		constructor() {
@@ -173,16 +182,16 @@ const game = () => {
 			let currentTile = tiles.find((x) => x.state == tileState.hasPumpkin);
 			if (currentTile != undefined) {
 				if (this.x < currentTile.x) {
-					this.x += 0.5;
+					this.x += 2;
 				}
 				if (this.y < currentTile.y) {
-					this.y += 0.5;
+					this.y += 2;
 				}
 				if (this.x > currentTile.x) {
-					this.x -= 0.5;
+					this.x -= 2;
 				}
 				if (this.y > currentTile.y) {
-					this.y -= 0.5;
+					this.y -= 2;
 				}
 				if (this.x == currentTile.x && this.y == currentTile.y) {
 					currentTile.harvest();
@@ -224,21 +233,21 @@ const game = () => {
 				drawImage(wetDirt1, this.x, this.y);
 			}
 			switch (this.state) {
-				case tileState.hasSeed:
-					drawImage(seed, this.x, this.y);
-					break;
-				case tileState.hasPumpkin:
-					drawImage(pumpkin, this.x + 10, this.y + 10);
-					break;
-				case tileState.isWell:
-					drawText("W", this.x + 15, this.y + 35, 22, "#606070");
-					break;
-				case tileState.hasTree:
-					drawText("T", this.x + 15, this.y + 35, 22, "#964253");
-					break;
-				case tileState.hasStone:
-					drawText("S", this.x + 15, this.y + 35, 22, "#c2c2d1");
-					break;
+			case tileState.hasSeed:
+				drawImage(seed, this.x, this.y);
+				break;
+			case tileState.hasPumpkin:
+				drawImage(pumpkin, this.x + 10, this.y + 10);
+				break;
+			case tileState.isWell:
+				drawImage(well, this.x , this.y);
+				break;
+			case tileState.hasTree:
+				drawImage(tree1, this.x, this.y);
+				break;
+			case tileState.hasStone:
+				drawImage(stone1, this.x , this.y );
+				break;
 			}
 		}
 
@@ -276,18 +285,17 @@ const game = () => {
 		}
 	}
 
-	// Fix this picker.
 	const statePick = () => {
 		let rand = Math.floor(Math.random() * Math.floor(3));
 		switch (rand) {
-			case 0:
-				return tileState.empty;
-			case 1:
-				return tileState.hasStone;
-			case 2:
-				return tileState.hasTree;
-			default:
-				return tileState.empty;
+		case 0:
+			return tileState.empty;
+		case 1:
+			return tileState.hasStone;
+		case 2:
+			return tileState.hasTree;
+		default:
+			return tileState.empty;
 		}
 	};
 
@@ -303,6 +311,12 @@ const game = () => {
 		score = pumpkins * 100;
 	};
 
+	const setGameOver = () => {
+		clear();
+		drawText("Game Over", 300, 400, 22, "#ffb570");
+		drawText(`Score: ${score}`, 300, 500, 22, "#ffb570");
+	};
+
 	const init = () => {
 		pumpkin.src = "Assets/Pumpkin1.png";
 		seedBag.src = "Assets/SeedBag.png";
@@ -310,13 +324,15 @@ const game = () => {
 		wetDirt1.src = "Assets/WetDirt1.png";
 		ghost.src = "Assets/Ghost.png";
 		seed.src = "Assets/Seed.png";
+		tree1.src = "Assets/Tree1.png";
+		stone1.src = "Assets/Stone1.png";
+		well.src = "Assets/Well.png";
 		for (let x = 50; x < 750; x += 50) {
 			for (let y = 50; y < 750; y += 50) {
 				tiles.push(new Tile(x, y, tileState.empty));
 			}
 		}
 
-		//TODO: randomly add these properties.
 		for (let tile of tiles) {
 			tile.state = statePick();
 		}
@@ -340,7 +356,7 @@ const game = () => {
 			ghost.draw();
 		}
 
-		drawText(`Time: ${seconds}`, 50, 30 , 16, "#ffb570");
+		drawText(`Time: ${seconds}`, 50, 30, 16, "#ffb570");
 		drawText(`Score: ${score}`, 550, 30, 16, "#ffb570");
 		drawText(`Seeds: ${seeds}`, 50, 785, 16, "#ffb570");
 		drawImage(seedBag, 0, 750);
@@ -350,9 +366,13 @@ const game = () => {
 	};
 
 	const updateScene = () => {
+		if(restartPressed) {
+			clearInterval(process);
+			game();	
+		}
 		incTime();
 		calcScore();
-		if (seconds > 0) {
+		if (seconds > -1) {
 			drawScene();
 			// Handle tile state.
 			if (mouseReleased) {
@@ -403,11 +423,13 @@ const game = () => {
 			if (ghosts.length < 4 && pumpkins == 75) {
 				ghosts.push(new Ghost(0, 850, 0, 850));
 			}
+		} else {
+			setGameOver();
 		}
 	};
 
 	init();
-	setInterval(updateScene, 10);
+	process = setInterval(updateScene, 10);
 };
 // init ; update -> draw
 game();
